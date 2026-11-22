@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build artifacts & macOS app bundles
+dist/
+out/
+*.dmg
+*.app
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs & Environment
+npm-debug.log*
+.env
+.env.local

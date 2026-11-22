@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PoroMac Overlay</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Top Control Bar (Always visible at top-center, compact HUD) -->
+  <header class="hud-topbar" id="topbar">
+    <div class="brand">
+      <span class="brand-logo">❄️</span>
+      <span class="brand-title">PoroMac</span>
+      <span class="status-badge" id="statusBadge">Suche LoL Client...</span>
+    </div>
+
+    <div class="hotkey-hints">
+      <span class="hotkey-pill"><kbd>⌘</kbd>+<kbd>⇧</kbd>+<kbd>O</kbd> Ein/Ausblenden</span>
+      <span class="hotkey-pill" id="lockPill"><kbd>⌘</kbd>+<kbd>⇧</kbd>+<kbd>L</kbd> Click-Through: <strong id="lockStatus">AUS</strong></span>
+    </div>
+
+    <div class="toolbar-actions">
+      <button class="btn-chip" id="btnDemoChamp" title="Simuliere Champion Select Analyse">Demo: Champ Select</button>
+      <button class="btn-chip" id="btnDemoGame" title="Simuliere Live In-Game HUD">Demo: In-Game HUD</button>
+      <button class="btn-chip" id="btnLiveMode" title="Zurück zum echten LoL Client Modus">Live Auto</button>
+      <button class="btn-icon btn-danger" id="btnQuit" title="Overlay beenden">✕</button>
+    </div>
+  </header>
+
+  <!-- VIEW 1: Waiting / Lobby State -->
+  <main id="viewWaiting" class="overlay-panel waiting-panel">
+    <div class="waiting-card">
+      <div class="pulse-ring"></div>
+      <h2 id="waitingTitle">Warte auf League of Legends...</h2>
+      <p id="waitingSub">
+        Starte den League Client auf deinem Mac oder teste das Overlay sofort über die <strong>Demo-Buttons</strong> oben!
+      </p>
+      <div class="feature-grid">
+        <div class="feature-item">
+          <span class="feat-icon">🔍</span>
+          <div>
+            <strong>Champ Select Scouting</strong>
+            <small>Winrates, KDA, OTP-Erkennung & Hot/Cold Streaks automatisch</small>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feat-icon">⚔️</span>
+          <div>
+            <strong>Live In-Game HUD & Timer</strong>
+            <small>CS/Min, Live-KDA, Gold, Dragon/Baron Respawn & Scoreboard</small>
+          </div>
+        </div>
+        <div class="feature-item">
+          <span class="feat-icon">🛡️</span>
+          <div>
+            <strong>Smart In-Game Build Advisor</strong>
+            <small>Analysiert Gegner-Komposition, Fed Threats & Gold für optimale nächste Items</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- VIEW 2: Champ Select Scouting Overlay (Porofessor Card Grid) -->
+  <section id="viewChampSelect" class="overlay-panel champ-select-panel hidden">
+    <div class="section-header">
+      <div>
+        <h2>Lobby & Team Scouting</h2>
+        <p class="sub-label">Analysiert über lokale LCU-Schnittstelle (Kein API-Key nötig)</p>
+      </div>
+      <div class="phase-timer" id="champTimer">45s</div>
+    </div>
+
+    <div class="team-cards-grid" id="teamCardsContainer">
+      <!-- Dynamically populated player cards -->
+    </div>
+  </section>
+
+  <!-- VIEW 3: Live In-Game HUD (Top-Left Jungle & Objective Tracker + Top-Right Stats + Build Advisor + Matchup) -->
+  <section id="viewInGame" class="ingame-layout hidden">
+    <!-- Left / Top-Left Jungle & Epic Objective Tracker Widget -->
+    <div class="hud-widget objectives-widget" id="jungleWidget">
+      <div class="widget-header-row">
+        <span class="widget-title">JUNGLE & EPIC OBJECTIVES</span>
+        <span class="widget-hint">Klick = Reset Timer</span>
+      </div>
+
+      <!-- Epic Monsters (Auto-synced via Live Events + clickable override) -->
+      <div class="obj-row">
+        <div class="obj-item" id="dragonBox" title="Dragon (5:00 Respawn)">
+          <span class="obj-icon">🐉</span>
+          <div>
+            <div class="obj-name">Drake</div>
+            <div class="obj-timer" id="dragonTimer">ALIVE</div>
+          </div>
+        </div>
+        <div class="obj-item" id="pitBox" title="Voidgrubs (6:00) / Herald (14:00)">
+          <span class="obj-icon" id="pitIcon">🐛</span>
+          <div>
+            <div class="obj-name" id="pitName">Voidgrubs</div>
+            <div class="obj-timer" id="pitTimer">06:00</div>
+          </div>
+        </div>
+        <div class="obj-item" id="baronBox" title="Baron Nashor (6:00 Respawn)">
+          <span class="obj-icon">👾</span>
+          <div>
+            <div class="obj-name">Baron</div>
+            <div class="obj-timer" id="baronTimer">20:00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buffs & Jungle Camps Tracker (Ally & Enemy Buffs + Scuttle + Standard Camps) -->
+      <div class="camps-section">
+        <div class="camps-subtitle">BUFFS & CAMPS (KLICK STARTET COUNTDOWN)</div>
+        <div class="camps-grid" id="campsGrid">
+          <button class="camp-btn ally-camp" data-camp="allyBlue" data-cd="300">
+            <span class="camp-dot blue">🔵</span>
+            <div class="camp-info">
+              <span class="camp-label">Own Blue</span>
+              <span class="camp-time" id="timer_allyBlue">ALIVE</span>
+            </div>
+          </button>
+          <button class="camp-btn ally-camp" data-camp="allyRed" data-cd="300">
+            <span class="camp-dot red">🔴</span>
+            <div class="camp-info">
+              <span class="camp-label">Own Red</span>
+              <span class="camp-time" id="timer_allyRed">ALIVE</span>
+            </div>
+          </button>
+          <button class="camp-btn enemy-camp" data-camp="enemyBlue" data-cd="300">
+            <span class="camp-dot blue">🔵</span>
+            <div class="camp-info">
+              <span class="camp-label">Enemy Blue</span>
+              <span class="camp-time" id="timer_enemyBlue">ALIVE</span>
+            </div>
+          </button>
+          <button class="camp-btn enemy-camp" data-camp="enemyRed" data-cd="300">
+            <span class="camp-dot red">🔴</span>
+            <div class="camp-info">
+              <span class="camp-label">Enemy Red</span>
+              <span class="camp-time" id="timer_enemyRed">ALIVE</span>
+            </div>
+          </button>
+          <button class="camp-btn river-camp" data-camp="topScuttle" data-cd="150">
+            <span class="camp-dot">🦀</span>
+            <div class="camp-info">
+              <span class="camp-label">Top Scuttle</span>
+              <span class="camp-time" id="timer_topScuttle">ALIVE</span>
+            </div>
+          </button>
+          <button class="camp-btn river-camp" data-camp="botScuttle" data-cd="150">
+            <span class="camp-dot">🦀</span>
+            <div class="camp-info">
+              <span class="camp-label">Bot Scuttle</span>
+              <span class="camp-time" id="timer_botScuttle">ALIVE</span>
+            </div>
+          </button>
+          <button class="camp-btn minor-camp" data-camp="enemyRaptors" data-cd="135">
+            <span class="camp-dot">🪶</span>
+            <div class="camp-info">
+              <span class="camp-label">En. Raptors</span>
+              <span class="camp-time" id="timer_enemyRaptors">2:15</span>
+            </div>
+          </button>
+          <button class="camp-btn minor-camp" data-camp="enemyGromp" data-cd="135">
+            <span class="camp-dot">🐸</span>
+            <div class="camp-info">
+              <span class="camp-label">En. Gromp</span>
+              <span class="camp-time" id="timer_enemyGromp">2:15</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top-Right Personal Performance HUD (Porofessor In-Game Style) -->
+    <div class="hud-widget personal-hud">
+      <div class="personal-header">
+        <div>
+          <span class="player-champ" id="hudChampName">Ahri</span>
+          <span class="player-level" id="hudLevel">Lv. 11</span>
+        </div>
+        <div class="game-clock" id="hudGameClock">14:05</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span class="stat-label">K / D / A</span>
+          <span class="stat-value" id="hudKda">6 / 1 / 8</span>
+          <span class="stat-sub" id="hudKdaRatio">14.0 KDA</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">CS & CS/MIN</span>
+          <span class="stat-value" id="hudCs">110 (7.8/m)</span>
+          <span class="stat-sub" id="hudCsRating">Dia+ Pace 🔥</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">AKTUELLES GOLD</span>
+          <span class="stat-value gold-text" id="hudGold">1,450 G</span>
+          <span class="stat-sub" id="hudWardScore">Vision: 22.4</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right-Side Smart Build & Next Item Advisor Widget -->
+    <div class="hud-widget build-advisor-widget" id="buildAdvisorWidget">
+      <div class="widget-header-row">
+        <span class="widget-title">LIVE BUILD & NEXT ITEM ADVISOR</span>
+        <span class="archetype-pill" id="buildArchetypeBadge">MAGE</span>
+      </div>
+
+      <!-- Enemy Damage Split Bar (AD vs AP) + Situational Threat Alerts -->
+      <div class="dmg-profile-box">
+        <div class="dmg-profile-labels">
+          <span class="ad-label" id="enemyAdLabel">Gegner AD: 68%</span>
+          <span class="ap-label" id="enemyApLabel">AP: 32%</span>
+        </div>
+        <div class="dmg-split-bar">
+          <div class="dmg-ad-fill" id="enemyAdBar" style="width: 68%"></div>
+          <div class="dmg-ap-fill" id="enemyApBar" style="width: 32%"></div>
+        </div>
+        <div class="threat-alerts-row" id="threatAlertsRow"></div>
+      </div>
+
+      <!-- Current Owned Items Inventory Strip -->
+      <div class="owned-items-strip">
+        <span class="strip-label">INVENTAR</span>
+        <div class="owned-slots" id="ownedItemsContainer"></div>
+      </div>
+
+      <!-- Immediate Recall / Buy Window Banner -->
+      <div class="recall-banner" id="recallAdviceBanner">
+        <div class="recall-headline" id="recallHeadline">Lade Kauf-Analyse...</div>
+        <div class="recall-sub" id="recallSubtext"></div>
+      </div>
+
+      <!-- Recommended Next Items List -->
+      <div class="next-items-title">EMPFOHLENE NÄCHSTE ITEMS</div>
+      <div class="next-items-list" id="nextItemsContainer"></div>
+    </div>
+
+    <!-- Compact Live Matchup / Enemy & Ally Tracker -->
+    <div class="hud-widget live-teams-widget" id="liveTeamsWidget">
+      <div class="widget-title">LIVE MATCHUP & RESPAWN TRACKER</div>
+      <div class="dual-team-table">
+        <div class="team-col" id="orderTeamCol"></div>
+        <div class="team-col" id="chaosTeamCol"></div>
+      </div>
+    </div>
+  </section>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

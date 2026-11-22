@@ -1,0 +1,15 @@
+{
+  "name": "poromac-overlay",
+  "version": "0.1.0",
+  "description": "Porofessor-style macOS Overlay for League of Legends (LCU + Live Client API)",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "demo": "DEMO_MODE=true electron .",
+    "build:mac": "node scripts/build_mac_app.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}
